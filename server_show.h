@@ -8,6 +8,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <map>
+#include <vector>
+#include <signal.h>
 using namespace std;
 
 // some configurations
@@ -22,7 +25,8 @@ using namespace std;
 
 //  Client_Buffet operation code end
 //  2[Server_Buffet operation code
-
+#define LOGIN_SUCC_FLAG 1
+#define LOGIN_FAIL_FLAG 0
 //  end Server_Buffet operation code
 
 // analyze_state
@@ -34,8 +38,8 @@ union Client_Buffet
   struct
   {
     unsigned char operation_number[2]; // explare how to resolve
-    unsigned char user_name[10];       // client name
-    unsigned char user_password[10];   // client password
+    char user_name[10];                // client name
+    char user_password[10];            // client password
     unsigned char un_use[106];         //
 
   } content;
@@ -53,11 +57,47 @@ union Server_Buffet
   struct
   {
     unsigned char operation_number[2]; // explare how to resolve
-    unsigned char login_state;         // whether login successful
+    char login_state;                  // whether login successful
     char no_use[125];                  // leave to use
   } content;
   char characters[128];
 };
 
+class Client
+{
+  enum States
+  {
+    Lazy = 0,
+    Ready = 1,
+    Combat = 2
+  };
+
+private:
+  string name;
+  string password;
+  int blood;
+  int state;
+
+public:
+  Client(string new_name, string new_passord)
+  {
+    name = new_name;
+    password = new_passord;
+    blood = rand() % 50 + 1; // random blood
+    state = Lazy;
+  }
+  Client()
+  {
+    blood = rand() % 50 + 1; // random blood
+    state = Lazy;
+  }
+  bool test_identity(string new_name)
+  {
+    return new_name == name;
+  }
+};
+
 // some functions
-void analyze(union Client_Buffet *cb, union Server_Buffet *sb);
+bool user_is_exist(string youename);
+void analyze(union Client_Buffet *cb, union Server_Buffet *sb, int socket);
+void user_login(union Client_Buffet *cb, union Server_Buffet *sb, int socket);

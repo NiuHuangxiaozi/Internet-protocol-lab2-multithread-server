@@ -5,6 +5,19 @@ int server_socket = -1;        // server's fd
 int client_socket[MAX_CLIENT]; // clients' fd
 ////
 
+static void recvfrom_int(int signo)
+{
+  cout << "server not exit!" << endl;
+  close(server_socket);
+  for (int i = 0; i < MAX_CLIENT; i++) // not reserve
+  {
+    if (client_socket[i] != 0)
+    {
+      close(client_socket[i]);
+    }
+  }
+  exit(0);
+}
 void *handle_one_client(void *arg)
 {
   // 1  [acquire according socket]
@@ -16,14 +29,11 @@ void *handle_one_client(void *arg)
   union Server_Buffet sb; // receive buffer
 
   // receive message from clients
-  if (recv(socket_num, cb.characters, sizeof(cb.characters), 0) > 0)
+  while (recv(socket_num, cb.characters, sizeof(cb.characters), 0) > 0)
   {
-    analyze(&cb, &sb); // analyze the client message
-    int send_flag = send(socket_num, sb.characters, sizeof(sb.characters), 0);
-    assert(send_flag != -1);
+    analyze(&cb, &sb, socket_num); // analyze the client message
   }
 
-  close(socket_num);                   // close according socket
   for (int i = 0; i < MAX_CLIENT; i++) // not reserve
   {
     if (client_socket[i] == socket_num)
@@ -60,6 +70,7 @@ int main()
   int listen_num = listen(server_socket, MAX_CLIENT_CONNECTION);
   assert(listen_num != -1);
 
+  signal(SIGINT, recvfrom_int); // press ctrl c exit
   puts("Waiting for incoming connections...");
 
   // select
@@ -84,9 +95,9 @@ int main()
     }
 
     // 设置等待时间
-    struct timeval timeout;
-    timeout.tv_sec = TIME_INTEVAL;
-    timeout.tv_usec = 0;
+    // struct timeval timeout;
+    // timeout.tv_sec = TIME_INTEVAL;
+    // timeout.tv_usec = 0;
 
     // use select function
     int activity = select(max_fd + 1, &fdset, NULL, NULL, NULL);

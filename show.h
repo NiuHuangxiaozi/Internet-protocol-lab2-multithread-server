@@ -8,6 +8,7 @@ using namespace std;
 #include <assert.h>
 #include <string>
 #include <map>
+#include <unistd.h>
 
 // Client_Buffet operation code
 #define LOGIN_TEST 0x0001
@@ -20,8 +21,8 @@ union Client_Buffet
   struct
   {
     unsigned char operation_number[2]; // explare how to resolve
-    unsigned char user_name[10];       // client name
-    unsigned char user_password[10];   // client password
+    char user_name[10];                // client name
+    char user_password[10];            // client password
     unsigned char un_use[106];         //
 
   } content;
@@ -29,8 +30,8 @@ union Client_Buffet
 };
 
 // Client_Buffet operation code
-#define LOGIN_STATE_SUCCESS 0x01 // login success
-#define LOGIN_STATE_FAIL 0x00    // login fail
+#define LOGIN_STATE_SUCCESS 1 // login success
+#define LOGIN_STATE_FAIL 0    // login fail
 
 //  Client_Buffet operation code end
 
@@ -39,7 +40,7 @@ union Server_Buffet
   struct
   {
     unsigned char operation_number[2]; // explare how to resolve
-    unsigned char login_state;         // whether login successful
+    char login_state;                  // whether login successful
     char no_use[125];                  // leave to use
   } content;
   char characters[128];
