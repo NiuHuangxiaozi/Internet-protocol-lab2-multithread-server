@@ -1,0 +1,156 @@
+#include "server_show.h"
+
+////////////
+int server_socket = -1;        // server's fd
+int client_socket[MAX_CLIENT]; // clients' fd
+////
+
+void *handle_one_client(void *arg)
+{
+  // 1  [acquire according socket]
+  int *socket = (int *)arg;
+  int socket_num = *socket;
+
+  // 2 [defien according message]
+  union Client_Buffet cb; // send buffer
+  union Server_Buffet sb; // receive buffer
+
+  // receive message from clients
+  if (recv(socket_num, cb.characters, sizeof(cb.characters), 0) > 0)
+  {
+    analyze(&cb, &sb); // analyze the client message
+    int send_flag = send(socket_num, sb.characters, sizeof(sb.characters), 0);
+    assert(send_flag != -1);
+  }
+
+  close(socket_num);                   // close according socket
+  for (int i = 0; i < MAX_CLIENT; i++) // not reserve
+  {
+    if (client_socket[i] == socket_num)
+    {
+      client_socket[i] = 0;
+      break;
+    }
+  }
+  pthread_exit(NULL); // thread disappear
+}
+
+int main()
+{
+  // create a thread pt
+  pthread_t pt;
+  //  create according socket
+  server_socket = socket(PF_INET, SOCK_STREAM, 0);
+  assert(server_socket != -1);
+
+  // set socket parameters use to reserve client ip and port
+  struct sockaddr_in addr;
+  int addr_lenth = 0;
+
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_port = htons(SRV_PORT);
+
+  // bind
+  int bind_num = bind(server_socket, (const struct sockaddr *)(&addr), sizeof(addr));
+  assert(bind_num != -1);
+
+  // listen
+  int listen_num = listen(server_socket, MAX_CLIENT_CONNECTION);
+  assert(listen_num != -1);
+
+  puts("Waiting for incoming connections...");
+
+  // select
+  fd_set fdset; // define fd set
+  while (true)
+  {
+    for (int k = 0; k < MAX_CLIENT; k++)
+      cout << client_socket[k] << " ";
+    cout << endl;
+
+    FD_ZERO(&fdset);               // clear set to zero
+    FD_SET(server_socket, &fdset); // add server socket fd to fdset
+
+    int max_fd = server_socket;          // in order to use select so find max fd
+    for (int i = 0; i < MAX_CLIENT; i++) //
+    {
+      int current_id = client_socket[i];
+      if (current_id > 0)
+        FD_SET(current_id, &fdset);
+      if (current_id > max_fd)
+        max_fd = current_id;
+    }
+
+    // 设置等待时间
+    struct timeval timeout;
+    timeout.tv_sec = TIME_INTEVAL;
+    timeout.tv_usec = 0;
+
+    // use select function
+    int activity = select(max_fd + 1, &fdset, NULL, NULL, NULL);
+    assert(activity >= 0);
+    if (activity == 0)
+    {
+      cout << "Timeout reached!" << endl;
+      continue;
+    }
+    else
+    {
+      // accept client socket number server fd has data to read
+      if (FD_ISSET(server_socket, &fdset))
+      {
+        int new_socket;
+        // accept a client socket
+        if ((new_socket = accept(server_socket, (struct sockaddr *)&addr, (socklen_t *)&addr_lenth)) < 0)
+        {
+          perror("accept error");
+          exit(EXIT_FAILURE);
+        }
+        cout << "New connection, socket fd is " << new_socket << ", ip is: " << inet_ntoa(addr.sin_addr) << ", port : " << ntohs(addr.sin_port) << endl;
+
+        // reserve client fd
+        int i = 0;
+        for (; i < MAX_CLIENT; i++)
+        {
+          if (client_socket[i] == 0)
+          {
+            client_socket[i] = new_socket;
+            // create thread to deal with requests
+            pthread_create(&pt, NULL, handle_one_client, &new_socket);
+            // detach from main process
+            pthread_detach(pt);
+            break;
+          }
+        }
+        if (i == MAX_CLIENT) // too many clients
+        {
+          const char buf[17] = "too many clients";
+          cout << "too mant clients" << endl;
+          send(new_socket, buf, sizeof(buf), 0);
+        }
+      }
+      //
+      // list all fd find which one is dump
+      /*
+      for (int j = 0; j < MAX_CLIENT; j++)
+      {
+        if (client_socket[j] != 0 && FD_ISSET(client_socket[j], &fdset))
+        {
+          if (recv(client_socket[j], NULL, 0, MSG_PEEK | MSG_DONTWAIT) == 0)
+          {
+            cout << "The client disconnected" << endl;
+            close(client_socket[j]);
+            client_socket[j] = 0;
+          }
+        }
+      }
+      */
+      ////////////////////////////////////////
+    }
+  }
+  // close server socket
+  close(server_socket);
+  return 0;
+}
