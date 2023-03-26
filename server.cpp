@@ -33,6 +33,9 @@ void *handle_one_client(void *arg)
   {
     analyze(&cb, &sb, socket_num); // analyze the client message
   }
+  cout << "Delete one client the sockfd is " << socket_num << endl;
+  delete_client(socket_num); // delete according player
+  close(socket_num);         // close server 2 client connection
 
   for (int i = 0; i < MAX_CLIENT; i++) // not reserve
   {
@@ -101,8 +104,12 @@ int main()
 
     // use select function
     int activity = select(max_fd + 1, &fdset, NULL, NULL, NULL);
-    assert(activity >= 0);
-    if (activity == 0)
+    if (activity < 0 && errno == EINTR)
+    {
+      // select被信号中断，继续调用select
+      continue;
+    }
+    else if (activity == 0)
     {
       cout << "Timeout reached!" << endl;
       continue;
@@ -143,21 +150,6 @@ int main()
         }
       }
       //
-      // list all fd find which one is dump
-      /*
-      for (int j = 0; j < MAX_CLIENT; j++)
-      {
-        if (client_socket[j] != 0 && FD_ISSET(client_socket[j], &fdset))
-        {
-          if (recv(client_socket[j], NULL, 0, MSG_PEEK | MSG_DONTWAIT) == 0)
-          {
-            cout << "The client disconnected" << endl;
-            close(client_socket[j]);
-            client_socket[j] = 0;
-          }
-        }
-      }
-      */
       ////////////////////////////////////////
     }
   }

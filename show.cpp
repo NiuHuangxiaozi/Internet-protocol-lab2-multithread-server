@@ -4,10 +4,6 @@ const char *tar_ip = "127.0.0.1";
 int tar_port = 4321;
 
 // ui
-void print_not_exist_city(string s)
-{
-  cout << "Sorry, Server does not have weather information for city " + s << endl;
-}
 void print_login_ui()
 {
   cout << "Welcome to NJUCS Play Program!" << endl;
@@ -18,14 +14,13 @@ void print_not_connection()
   cout << "Can Not Connect To Server!" << endl;
 }
 
-void print_whether_select()
+void print_main_ui()
 {
 
-  cout << "Please enter the given number to query" << endl;
-  cout << "1.today" << endl;
-  cout << "2.three days from today" << endl;
-  cout << "3.custom day by yourself" << endl;
-  cout << "(r)back,(c)cls,(#)exit" << endl;
+  cout << "===================Main Table===================" << endl;
+  cout << "0.Look for basic information" << endl;
+  cout << "1.Look for rivals" << endl;
+  cout << "2.back" << endl;
   cout << "===================================================" << endl;
 }
 void print_input_error()
@@ -54,4 +49,119 @@ int test_connection()
 
   // successful return socket number
   return socket_state;
+}
+void test_operation(string operation)
+{
+  if (operation.size() == 0 || operation.size() >= 2)
+    throw operation;
+  else if (operation[0] >= '0' && operation[0] <= '2')
+    return;
+  else
+    throw operation;
+}
+union Client_Buffet cb; // send buffer
+union Server_Buffet sb; // receive buffer
+
+enum user_state
+{
+  LOGIN_IN = 0,
+  BASE_UI = 1
+};
+
+// some send and recv functions
+void Basic_Ui(int sockfd);
+void Login_stage(int sockfd);
+void ask_main_information(int sockfd);
+
+//
+// state functions
+int state = 0; // user initial state
+void normal_action(int sockfd)
+{
+  switch (state)
+  {
+  case LOGIN_IN: // login stage
+    Login_stage(sockfd);
+    break;
+  case BASE_UI:
+    Basic_Ui(sockfd);
+    break;
+  };
+}
+
+void Login_stage(int sockfd)
+{
+  print_login_ui();
+  cout << "user name" << endl;
+  cin >> cb.content.user_name;
+  cout << "user password " << endl;
+  cin >> cb.content.user_password;
+
+  int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
+  if (send_flag <= 0)
+    throw true;
+  int recv_flag = recv(sockfd, sb.characters, sizeof(sb.characters), 0);
+  if (recv_flag <= 0)
+    throw true;
+  if (int(sb.content.login_state) == LOGIN_STATE_SUCCESS)
+  {
+    cout << "Login in successfully" << endl;
+    system("clear");
+    state = BASE_UI;
+  }
+  else
+  {
+    cout << "Login in failly" << endl;
+  }
+}
+
+void Basic_Ui(int sockfd)
+{
+  print_main_ui();
+  // examination for input order
+  string operation;
+  while (true)
+  {
+    cout << "input operatopn: ";
+    cin >> operation;
+    try
+    {
+      test_operation(operation);
+    }
+    catch (string s)
+    {
+      print_input_error();
+      continue;
+    }
+    // do the job
+    int opera = (int)operation[0];
+    switch (opera)
+    {
+    case 0: // look for main information
+      ask_main_information(sockfd);
+      break;
+    case 1:
+    case 2:
+    default:
+      break;
+    }
+  }
+}
+
+void ask_main_information(int sockfd)
+{
+  cb.content.operation_number = ASK_MAIN_INFORMATION;
+  int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
+  if (send_flag <= 0)
+    return;
+  int recv_flag = recv(sockfd, sb.characters, sizeof(sb.characters), 0);
+  if (recv_flag <= 0)
+    return;
+  cout << "recevice main information" << endl;
+  cout << "Name: " << sb.content.user_name << endl;
+  cout << "Passward: " << sb.content.user_password << endl;
+  cout << "Blood: " << sb.content.blood << endl;
+  cout << "State: " << sb.content.state << endl;
+  cout << "State 0 :Free State 1:Ready  State 2:Combating" << endl;
+  cout << "=========================================" << endl;
 }

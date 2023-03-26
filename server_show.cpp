@@ -15,19 +15,32 @@ bool user_is_exist(string yourname)
   }
   return false;
 }
-void analyze(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
+
+void delete_client(int socket_num)
 {
-  int operation_higher_bit = cb->content.operation_number[0];
-  int operation_lower_bit = cb->content.operation_number[1];
-  switch (operation_higher_bit)
+  for (int j = 0; j < int(clients.size()); j++)
   {
-  case 0:
-    switch (operation_lower_bit)
+    if (clients[j].get_sockfd() == socket_num)
     {
-    case LOGIN_EXAMINATION:
-      user_login(cb, sb, socket); // login test
+      clients.erase(clients.begin() + j);
       break;
     }
+  }
+  return;
+}
+
+// state function
+void analyze(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
+{
+  int opera = cb->content.operation_number;
+  switch (opera)
+  {
+  case LOGIN_EXAMINATION:
+    user_login(cb, sb, socket); // login test
+    break;
+  case MAIN_INFORMATION:
+    reback_information(cb, sb, socket); // reback information
+  default:
     break;
   }
 }
@@ -42,10 +55,28 @@ void user_login(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
   else // successful
   {
     sb->content.login_state = LOGIN_STATE_SUCCESS;
-    Client cli(uer_name, "123456"); // create
+    Client cli(uer_name, socket, "123456"); // create
     clients.push_back(cli);
     name2index[uer_name] = clients.size() - 1;
   }
   int send_flag = send(socket, sb->characters, sizeof(sb->characters), 0);
   assert(send_flag != -1);
+}
+
+void reback_information(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
+{
+  string uer_name = cb->content.user_name;
+  for (int index = 0; index < int(clients.size()); index++)
+  {
+    if (clients[index].get_name() == uer_name)
+    {
+      sb->content.operation_number = cb->content.operation_number;
+      sb->content.blood = clients[index].get_blood();
+      sb->content.state = clients[index].get_state();
+      strcpy(sb->content.user_name, clients[index].get_name().c_str());
+      strcpy(sb->content.user_password, clients[index].get_password().c_str());
+      int send_flag = send(socket, sb->characters, sizeof(sb->characters), 0);
+      assert(send_flag != -1);
+    }
+  }
 }

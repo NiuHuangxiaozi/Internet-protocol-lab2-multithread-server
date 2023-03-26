@@ -9,10 +9,12 @@ using namespace std;
 #include <string>
 #include <map>
 #include <unistd.h>
+#include <fcntl.h>
+#include <signal.h>
 
 // Client_Buffet operation code
-#define LOGIN_TEST 0x0001
-
+#define LOGIN_TEST 0x01
+#define ASK_MAIN_INFORMATION 0x02
 //  Client_Buffet operation code end
 
 // client send buffer construction
@@ -20,10 +22,10 @@ union Client_Buffet
 {
   struct
   {
-    unsigned char operation_number[2]; // explare how to resolve
-    char user_name[10];                // client name
-    char user_password[10];            // client password
-    unsigned char un_use[106];         //
+    char operation_number;  // explare how to resolve
+    char user_name[10];     // client name (use for login )
+    char user_password[10]; // client password (use for login)
+    char un_use[107];       //
 
   } content;
   char characters[128];
@@ -39,21 +41,23 @@ union Server_Buffet
 {
   struct
   {
-    unsigned char operation_number[2]; // explare how to resolve
-    char login_state;                  // whether login successful
-    char no_use[125];                  // leave to use
+    char operation_number;  // explare how to resolve
+    char login_state;       // whether login successful
+    char user_name[10];     // client name (use for login )
+    char user_password[10]; // client password (use for login)
+    char blood;             // client blood
+    char state;             // client state
+    char no_use[104];       // leave to use
   } content;
   char characters[128];
 };
 
 // UI
+void print_login_ui();
 void print_main_ui();
-void print_not_exist_city(string s);
-void print_whether_select();
 void print_input_error();
+void print_not_connection();
 
 // some actions
-void reserve_weather();
 int test_connection(); // return socketnum
-int send_city_name(char *city_name, int sockfd);
-int display_city_whether(string operation, int sockfd); // display city's whether
+void normal_action(int sockfd);
