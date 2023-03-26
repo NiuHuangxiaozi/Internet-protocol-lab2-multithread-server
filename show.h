@@ -15,7 +15,15 @@ using namespace std;
 // Client_Buffet operation code
 #define LOGIN_TEST 0x00
 #define ASK_MAIN_INFORMATION 0x01
+#define LOOK_FOR_RIVALS 0x02
+#define CLIENT_EXIT 0x03
+
 //  Client_Buffet operation code end
+// server_Buffet key bits
+#define LOGIN_STATE_SUCCESS 1 // login success
+#define LOGIN_STATE_FAIL 0    // login fail
+#define LOGIN_PLAYER_FULL 2   // busy
+// server_Buffet key bits
 
 // client send buffer construction
 union Client_Buffet
@@ -31,13 +39,6 @@ union Client_Buffet
   char characters[128];
 };
 
-// Client_Buffet operation code
-#define LOGIN_STATE_SUCCESS 1 // login success
-#define LOGIN_STATE_FAIL 0    // login fail
-#define LOGIN_PLAYER_FULL 2   // busy
-
-//  Client_Buffet operation code end
-
 union Server_Buffet
 {
   struct
@@ -48,7 +49,9 @@ union Server_Buffet
     char user_password[10]; // client password (use for login)
     char blood;             // client blood
     char state;             // client state
-    char no_use[104];       // leave to use
+    char player_number;     // player's number (max 3)
+    char members[11 * 3];   // player's (name ,state)
+    char no_use[70];        // leave to use
   } content;
   char characters[128];
 };
@@ -61,4 +64,5 @@ void print_not_connection();
 
 // some actions
 int test_connection(); // return socketnum
-void normal_action(int sockfd);
+void normal_action_read(union Server_Buffet *temp, int sockfd);
+void normal_action_write(int sockfd);

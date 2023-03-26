@@ -22,6 +22,7 @@ void print_main_ui()
   cout << "1.Look for rivals" << endl;
   cout << "2.back" << endl;
   cout << "3.clear" << endl;
+  cout << "4.look for matchmaking" << endl;
   cout << "===================================================" << endl;
 }
 void print_input_error()
@@ -66,52 +67,72 @@ union Server_Buffet sb; // receive buffer
 enum user_state
 {
   LOGIN_IN = 0,
-  BASE_UI = 1
+  BASE_UI = 1,
 };
+string operation; // basic ui operations
 
 // some send and recv functions
-void Basic_Ui(int sockfd);
-void Login_stage(int sockfd);
-void ask_main_information(int sockfd);
-
+void Basic_Ui_read(union Server_Buffet *sb, int sockfd);
+void Basic_Ui_write(int sockfd);
 //
+void Login_stage_read(union Server_Buffet *sb, int sockfd);
+void Login_stage_write(int sockfd);
+//
+void ask_main_information_read(union Server_Buffet *sb, int sockfd);
+void ask_main_information_write(int sockfd);
+//
+void exit_from_platform(int sockfd); // only for write
+//
+void look_for_rivals_read(union Server_Buffet *sb, int sockfd);
+void look_for_rivals_write(int sockfd);
+//
+void table_clear(int sockfd); // only for write (clear)
+//
+void show_exit_client(union Server_Buffet *sb, int sockfd); // only for read
+
 // state functions
 int state = 0; // user initial state
-void normal_action(int sockfd)
+void normal_action_read(union Server_Buffet *sb, int sockfd)
+{
+  // receive one client dump whenever what you do
+  if (int(sb->content.operation_number) == CLIENT_EXIT)
+  {
+    show_exit_client(sb, sockfd); // only for read
+  }
+  else
+  {
+    switch (state)
+    {
+    case LOGIN_IN: // login stage
+      Login_stage_read(sb, sockfd);
+      break;
+    case BASE_UI:
+      Basic_Ui_read(sb, sockfd);
+      break;
+    };
+  }
+}
+void normal_action_write(int sockfd)
 {
   switch (state)
   {
   case LOGIN_IN: // login stage
-    Login_stage(sockfd);
+    Login_stage_write(sockfd);
     break;
   case BASE_UI:
-    Basic_Ui(sockfd);
+    Basic_Ui_write(sockfd);
     break;
   };
 }
 
-void Login_stage(int sockfd)
+void Login_stage_read(union Server_Buffet *sb, int sockfd)
 {
-  print_login_ui();
-  cout << "user name" << endl;
-  cin >> cb.content.user_name;
-  cout << "user password " << endl;
-  cin >> cb.content.user_password;
-  cb.content.operation_number = LOGIN_TEST;
-
-  int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
-  if (send_flag <= 0)
-    throw 1;
-  int recv_flag = recv(sockfd, sb.characters, sizeof(sb.characters), 0);
-  if (recv_flag <= 0)
-    throw 1;
-  if (int(sb.content.login_state) == LOGIN_STATE_SUCCESS)
+  if (int(sb->content.login_state) == LOGIN_STATE_SUCCESS)
   {
     cout << "Login in successfully" << endl;
-    system("clear");
     state = BASE_UI;
   }
-  else if (int(sb.content.login_state) == LOGIN_PLAYER_FULL)
+  else if (int(sb->content.login_state) == LOGIN_PLAYER_FULL)
   {
     system("clear");
     cout << "The game is full of players" << endl;
@@ -123,15 +144,41 @@ void Login_stage(int sockfd)
     cout << "Login in fail" << endl;
   }
 }
+void Login_stage_write(int sockfd)
+{
+  print_login_ui();
+  cout << "user name" << endl;
+  cin >> cb.content.user_name;
+  cout << "user password " << endl;
+  cin >> cb.content.user_password;
+  cb.content.operation_number = LOGIN_TEST;
+  int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
+  if (send_flag <= 0)
+    throw 1;
+}
+void Basic_Ui_read(union Server_Buffet *sb, int sockfd)
+{
+  int opera = operation[0] - '0';
+  switch (opera)
+  {
+  case 0: // look for main information
+    ask_main_information_read(sb, sockfd);
+    break;
+  case 1:
+    look_for_rivals_read(sb, sockfd);
+    break;
+  default:
+    break;
+  }
+}
 
-void Basic_Ui(int sockfd)
+void Basic_Ui_write(int sockfd)
 {
   print_main_ui();
   // examination for input order
-  string operation;
+  cout << "input operation : ";
   while (true)
   {
-    cout << "input operatopn: ";
     cin >> operation;
     try
     {
@@ -142,44 +189,88 @@ void Basic_Ui(int sockfd)
       print_input_error();
       continue;
     }
-    // do the job
-    int opera = operation[0] - '0';
-    switch (opera)
-    {
-    case 0: // look for main information
-      ask_main_information(sockfd);
-      break;
-    case 1:
-      cout << "case 1" << endl;
-      break;
-    case 2:
-      cout << "case 2" << endl;
-      break;
-    case 3:
-      cout << "case 3" << endl;
-      system("clear");
-      print_main_ui();
-      break;
-    default:
-      break;
-    }
+    break;
+  }
+  // do the job
+  int opera = operation[0] - '0';
+  switch (opera)
+  {
+  case 0: // look for main information
+    ask_main_information_write(sockfd);
+    break;
+  case 1:
+    look_for_rivals_write(sockfd);
+    break;
+  case 2:
+    exit_from_platform(sockfd);
+    break;
+  case 3:
+    table_clear(sockfd);
+    break;
+  default:
+    break;
   }
 }
 
-void ask_main_information(int sockfd)
+// 0
+void ask_main_information_read(union Server_Buffet *sb, int sockfd)
+{
+  cout << "Personal Main Information" << endl;
+  cout << "Name: " << sb->content.user_name << endl;
+  cout << "Passward: " << sb->content.user_password << endl;
+  cout << "Blood: " << int(sb->content.blood) << endl;
+  cout << "State: " << int(sb->content.state) << endl;
+  cout << "(State 0 :Free || State 1:Ready || State 2:Combating)" << endl;
+  cout << "============================================" << endl;
+}
+void ask_main_information_write(int sockfd)
 {
   cb.content.operation_number = ASK_MAIN_INFORMATION;
   int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
-  if (send_flag <= 0)
-    return;
-  int recv_flag = recv(sockfd, sb.characters, sizeof(sb.characters), 0);
-  if (recv_flag <= 0)
-    return;
-  cout << "recevice main information" << endl;
-  cout << "Name: " << sb.content.user_name << endl;
-  cout << "Passward: " << sb.content.user_password << endl;
-  cout << "Blood: " << int(sb.content.blood) << endl;
-  cout << "State: " << int(sb.content.state) << endl;
-  cout << "(State 0 :Free || State 1:Ready || State 2:Combating)" << endl;
+  assert(send_flag > 0);
+}
+// 1
+void look_for_rivals_read(union Server_Buffet *sb, int sockfd)
+{
+  int number = int(sb->content.player_number);
+  cout << number << endl;
+  cout << "All Players" << endl;
   cout << "=========================================" << endl;
+  int current_state = -1;
+  for (int index = 0; index < number; index++)
+  {
+    cout << "Player [" << index << "] ";
+    string name;
+    for (int j = 0; j < 10; j++)
+      name += sb->content.members[index * 10 + j];
+    current_state = int(sb->content.members[(index + 1) * 10]);
+    cout << "Name : " << name << "   "
+         << "State : " << current_state << endl;
+  }
+  cout << "=========================================" << endl;
+  cout << "[ 0 :Free  1:Ready  2: Combat ]" << endl;
+}
+void look_for_rivals_write(int sockfd)
+{
+  cb.content.operation_number = LOOK_FOR_RIVALS;
+  int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
+  assert(send_flag > 0);
+}
+// 2
+void exit_from_platform(int sockfd)
+{
+  shutdown(sockfd, SHUT_WR);
+  throw 1;
+}
+void table_clear(int sockfd)
+{
+  system("clear");
+  // print_main_ui();
+  throw 2;
+}
+
+void show_exit_client(union Server_Buffet *sb, int sockfd)
+{
+  cout << "A player just went offline ! ( " << sb->content.user_name << " )"
+       << "State[" << int(sb->content.state) << "]" << endl;
 }

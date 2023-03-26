@@ -18,13 +18,26 @@ bool user_is_exist(string yourname)
 
 void delete_client(int socket_num)
 {
+  string name;
+  int state;
   for (int j = 0; j < int(clients.size()); j++)
   {
     if (clients[j].get_sockfd() == socket_num)
     {
+      name = clients[j].get_name();
+      state = clients[j].get_state();
       clients.erase(clients.begin() + j);
       break;
     }
+  }
+  for (int k = 0; k < int(clients.size()); k++)
+  {
+    union Server_Buffet sb;
+    sb.content.operation_number = CLIENT_EXIT;
+    strcpy(sb.content.user_name, name.c_str());
+    sb.content.state = state;
+    int send_flag = send(clients[k].get_sockfd(), sb.characters, sizeof(sb.characters), 0);
+    assert(send_flag != -1);
   }
   return;
 }
@@ -40,6 +53,9 @@ void analyze(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
     break;
   case MAIN_INFORMATION:
     reback_information(cb, sb, socket); // reback information
+    break;
+  case LOOK_FOR_RIVALS:
+    reback_players(cb, sb, socket); // reback players
   default:
     break;
   }
@@ -78,6 +94,23 @@ void reback_information(union Client_Buffet *cb, union Server_Buffet *sb, int so
       strcpy(sb->content.user_password, clients[index].get_password().c_str());
       int send_flag = send(socket, sb->characters, sizeof(sb->characters), 0);
       assert(send_flag != -1);
+      break;
     }
   }
+}
+
+void reback_players(union Client_Buffet *cb, union Server_Buffet *sb, int socket) // reback players
+{
+  cout << "This is reback players" << endl;
+  sb->content.operation_number = LOOK_FOR_RIVALS;
+  sb->content.player_number = clients.size();
+  int namesize = 10;
+  int statesize = 1;
+  for (int i = 0; i < int(clients.size()); i++)
+  {
+    memcpy(sb->content.members + i * (namesize + statesize), clients[i].get_name().c_str(), namesize);
+    sb->content.members[namesize * (i + 1)] = clients[i].get_state();
+  }
+  int send_flag = send(socket, sb->characters, sizeof(sb->characters), 0);
+  assert(send_flag != -1);
 }

@@ -19,22 +19,18 @@ using namespace std;
 #define MAX_CLIENT 3            // max client to serve
 #define TIME_INTEVAL 20         // 设置等待时间,select function wait inteval
 
-// sone resolve configurations
+// some resolve configurations
 
-//  1[Client_Buffet operation code
-#define LOGIN_TEST 0x01
-#define ASK_MAIN_INFORMATION 0x02
-//  Client_Buffet operation code end
-
-//  2[Server_Buffet operation code
-#define LOGIN_PLAYER_FULL 2 //  player full
-#define LOGIN_SUCC_FLAG 1   // succ
-#define LOGIN_FAIL_FLAG 0   // fail
-//  end Server_Buffet operation code
-
-// analyze_state
+//  operation code
 #define LOGIN_EXAMINATION 0
 #define MAIN_INFORMATION 1
+#define LOOK_FOR_RIVALS 2
+#define CLIENT_EXIT 3
+// Client_Buffet symbols
+#define LOGIN_STATE_FAIL 0x00    // login fail
+#define LOGIN_STATE_SUCCESS 0x01 // login success
+#define LOGIN_PLAYER_FULL 0x02   //  player full
+//
 
 // client send buffer construction
 union Client_Buffet
@@ -50,12 +46,6 @@ union Client_Buffet
   char characters[128];
 };
 
-// Client_Buffet operation code
-#define LOGIN_STATE_SUCCESS 0x01 // login success
-#define LOGIN_STATE_FAIL 0x00    // login fail
-
-//  Client_Buffet operation code end
-
 union Server_Buffet
 {
   struct
@@ -66,7 +56,9 @@ union Server_Buffet
     char user_password[10]; // client password (use for login)
     char blood;             // client blood
     char state;             // client state
-    char no_use[104];       // leave to use
+    char player_number;     // player's number (max 3)
+    char members[11 * 3];   // player's (name ,state)
+    char no_use[70];        // leave to use
   } content;
   char characters[128];
 };
@@ -123,3 +115,4 @@ void delete_client(int socket_num);
 void analyze(union Client_Buffet *cb, union Server_Buffet *sb, int socket);
 void user_login(union Client_Buffet *cb, union Server_Buffet *sb, int socket);
 void reback_information(union Client_Buffet *cb, union Server_Buffet *sb, int socket);
+void reback_players(union Client_Buffet *cb, union Server_Buffet *sb, int socket); // reback player
