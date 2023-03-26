@@ -13,8 +13,8 @@ using namespace std;
 #include <signal.h>
 
 // Client_Buffet operation code
-#define LOGIN_TEST 0x01
-#define ASK_MAIN_INFORMATION 0x02
+#define LOGIN_TEST 0x00
+#define ASK_MAIN_INFORMATION 0x01
 //  Client_Buffet operation code end
 
 // client send buffer construction
@@ -34,6 +34,7 @@ union Client_Buffet
 // Client_Buffet operation code
 #define LOGIN_STATE_SUCCESS 1 // login success
 #define LOGIN_STATE_FAIL 0    // login fail
+#define LOGIN_PLAYER_FULL 2   // busy
 
 //  Client_Buffet operation code end
 

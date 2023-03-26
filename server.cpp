@@ -144,9 +144,11 @@ int main()
         }
         if (i == MAX_CLIENT) // too many clients
         {
-          const char buf[17] = "too many clients";
+          union Server_Buffet temp;
+          temp.content.login_state = LOGIN_PLAYER_FULL;
           cout << "too mant clients" << endl;
-          send(new_socket, buf, sizeof(buf), 0);
+          int sendflag = send(new_socket, temp.characters, sizeof(temp.characters), 0);
+          assert(sendflag > 0);
         }
       }
       //

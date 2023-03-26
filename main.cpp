@@ -18,19 +18,16 @@ int main(int argc, char *argv[])
     exit(-1); // exit
   }
 
-  // 设置socket非阻塞
-  int flags = fcntl(sockfd, F_GETFL, 0);
-  fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
-
   while (true)
   {
     try
     {
       normal_action(sockfd);
     }
-    catch (bool flag)
+    catch (int flag)
     {
-      printf("The server is dump\n");
+      if (flag == 1)
+        printf("The server is dump\n");
       break;
     }
   }

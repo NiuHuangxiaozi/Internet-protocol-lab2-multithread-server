@@ -16,7 +16,7 @@ using namespace std;
 // some configurations
 #define SRV_PORT 4321           // server's port
 #define MAX_CLIENT_CONNECTION 3 // max client connection contemporary
-#define MAX_CLIENT 10           // max client to serve
+#define MAX_CLIENT 3            // max client to serve
 #define TIME_INTEVAL 20         // 设置等待时间,select function wait inteval
 
 // sone resolve configurations
@@ -27,8 +27,9 @@ using namespace std;
 //  Client_Buffet operation code end
 
 //  2[Server_Buffet operation code
-#define LOGIN_SUCC_FLAG 1
-#define LOGIN_FAIL_FLAG 0
+#define LOGIN_PLAYER_FULL 2 //  player full
+#define LOGIN_SUCC_FLAG 1   // succ
+#define LOGIN_FAIL_FLAG 0   // fail
 //  end Server_Buffet operation code
 
 // analyze_state

@@ -65,6 +65,7 @@ void user_login(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
 
 void reback_information(union Client_Buffet *cb, union Server_Buffet *sb, int socket)
 {
+  cout << "This is reback informaintion" << endl;
   string uer_name = cb->content.user_name;
   for (int index = 0; index < int(clients.size()); index++)
   {

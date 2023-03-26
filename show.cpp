@@ -21,6 +21,7 @@ void print_main_ui()
   cout << "0.Look for basic information" << endl;
   cout << "1.Look for rivals" << endl;
   cout << "2.back" << endl;
+  cout << "3.clear" << endl;
   cout << "===================================================" << endl;
 }
 void print_input_error()
@@ -54,7 +55,7 @@ void test_operation(string operation)
 {
   if (operation.size() == 0 || operation.size() >= 2)
     throw operation;
-  else if (operation[0] >= '0' && operation[0] <= '2')
+  else if (operation[0] >= '0' && operation[0] <= '3')
     return;
   else
     throw operation;
@@ -96,22 +97,30 @@ void Login_stage(int sockfd)
   cin >> cb.content.user_name;
   cout << "user password " << endl;
   cin >> cb.content.user_password;
+  cb.content.operation_number = LOGIN_TEST;
 
   int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
   if (send_flag <= 0)
-    throw true;
+    throw 1;
   int recv_flag = recv(sockfd, sb.characters, sizeof(sb.characters), 0);
   if (recv_flag <= 0)
-    throw true;
+    throw 1;
   if (int(sb.content.login_state) == LOGIN_STATE_SUCCESS)
   {
     cout << "Login in successfully" << endl;
     system("clear");
     state = BASE_UI;
   }
+  else if (int(sb.content.login_state) == LOGIN_PLAYER_FULL)
+  {
+    system("clear");
+    cout << "The game is full of players" << endl;
+    throw 2;
+  }
   else
   {
-    cout << "Login in failly" << endl;
+    system("clear");
+    cout << "Login in fail" << endl;
   }
 }
 
@@ -134,14 +143,23 @@ void Basic_Ui(int sockfd)
       continue;
     }
     // do the job
-    int opera = (int)operation[0];
+    int opera = operation[0] - '0';
     switch (opera)
     {
     case 0: // look for main information
       ask_main_information(sockfd);
       break;
     case 1:
+      cout << "case 1" << endl;
+      break;
     case 2:
+      cout << "case 2" << endl;
+      break;
+    case 3:
+      cout << "case 3" << endl;
+      system("clear");
+      print_main_ui();
+      break;
     default:
       break;
     }
@@ -160,8 +178,8 @@ void ask_main_information(int sockfd)
   cout << "recevice main information" << endl;
   cout << "Name: " << sb.content.user_name << endl;
   cout << "Passward: " << sb.content.user_password << endl;
-  cout << "Blood: " << sb.content.blood << endl;
-  cout << "State: " << sb.content.state << endl;
-  cout << "State 0 :Free State 1:Ready  State 2:Combating" << endl;
+  cout << "Blood: " << int(sb.content.blood) << endl;
+  cout << "State: " << int(sb.content.state) << endl;
+  cout << "(State 0 :Free || State 1:Ready || State 2:Combating)" << endl;
   cout << "=========================================" << endl;
 }
