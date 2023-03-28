@@ -34,7 +34,7 @@ void *handle_one_client(void *arg)
     analyze(&cb, &sb, socket_num); // analyze the client message
   }
   cout << "Delete one client the sockfd is " << socket_num << endl;
-  delete_client(socket_num); // delete according player
+  delete_client(socket_num); // delete according player and boardcast
   close(socket_num);         // close server 2 client connection
 
   for (int i = 0; i < MAX_CLIENT; i++) // not reserve

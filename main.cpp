@@ -27,6 +27,9 @@ void *Send_Message(void *arg)
         continue;
       }
     }
+    catch (string s)
+    {
+        }
     if (is_reset)
       break;
     pthread_cond_wait(&count_threshold_cv, &count_mutex);
@@ -80,6 +83,10 @@ int main(int argc, char *argv[])
       catch (int error)
       {
         is_reset = true;
+      }
+      catch (string s)
+      {
+        continue;
       }
     }
     if (is_reset) // back code
