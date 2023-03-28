@@ -71,14 +71,14 @@ union Server_Buffet
     char user_password[10];     // client password (use for login)
     char blood;                 // client blood
     char state;                 // client state
-    char player_number;         // player's number (max 3)
-    char members[11 * 3];       // player's (name ,state)
+    char player_number;         // player's number (max 4)
+    char members[11 * 4];       // player's (name ,state)
     char find_rival_error_code; // name not exit or  find myself to battle 0 means normal
     char peer_name[10];         // require another peer
     char user_name_choice;
     char peer_name_choice;
     char win_state;  // 0 means equal ,1 means win once ,2 means final win
-    char no_use[56]; // leave to use
+    char no_use[45]; // leave to use
   } content;
   char characters[128];
 };

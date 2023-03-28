@@ -19,8 +19,10 @@ bool user_is_exist(string yourname)
 
 void delete_client(int socket_num)
 {
+  // delete client
   string name;
   int state;
+  int map_adjust_loc = int(clients.size());
   for (int j = 0; j < int(clients.size()); j++)
   {
     if (clients[j].get_sockfd() == socket_num)
@@ -28,9 +30,13 @@ void delete_client(int socket_num)
       name = clients[j].get_name();
       state = clients[j].get_state();
       clients.erase(clients.begin() + j);
-      break;
+      map_adjust_loc = j;
     }
+    if (j >= map_adjust_loc)
+      name2index[clients[j].get_name()]--;
   }
+
+  // tell other clients
   for (int k = 0; k < int(clients.size()); k++)
   {
     union Server_Buffet sb;
@@ -39,6 +45,31 @@ void delete_client(int socket_num)
     sb.content.state = state;
     int send_flag = send(clients[k].get_sockfd(), sb.characters, sizeof(sb.characters), 0);
     assert(send_flag != -1);
+  }
+
+  // delete platform
+  for (int i = 0; i < int(platforms.size()); i++)
+  {
+    if (platforms[i].in_platform(name))
+    {
+      // tell counterpart turn to base_ui
+      // ignore the operation number
+      union Server_Buffet sb;
+      sb.content.operation_number = CLIENT_EXIT;
+
+      // memset(sb.content.peer_name, 0, sizeof(sb.content.peer_name));
+      // strcpy(sb.content.peer_name, name.c_str());
+      // sb.content.peer_name[sizeof(sb.content.peer_name) - 1] = '\0';
+
+      int send_flag = send(clients[name2index[platforms[i].get_counterpart_name(name)]].get_sockfd(),
+                           sb.characters, sizeof(sb.characters), 0);
+      assert(send_flag != -1);
+      // set client to base ui
+      clients[name2index[platforms[i].get_counterpart_name(name)]].set_online();
+      //  delete platform
+      platforms.erase(platforms.begin() + i);
+      break;
+    }
   }
   return;
 }

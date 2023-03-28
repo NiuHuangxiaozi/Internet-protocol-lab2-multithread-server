@@ -29,7 +29,7 @@ void *Send_Message(void *arg)
     }
     catch (string s)
     {
-        }
+    }
     if (is_reset)
       break;
     pthread_cond_wait(&count_threshold_cv, &count_mutex);

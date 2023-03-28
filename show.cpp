@@ -108,15 +108,9 @@ void Fight_read(union Server_Buffet *sb, int sockfd); // in fight ,receive messa
 int state = 0; // user initial state
 void normal_action_read(union Server_Buffet *sb, int sockfd)
 {
-  cout << "normal action read" << endl;
-  // receive one client dump whenever what you do
-  if (int(sb->content.operation_number) == CLIENT_EXIT)
-  {
-    show_exit_client(sb, sockfd); // only for read
-    string watchout = "just look";
-    throw watchout;
-  }
-  else if (int(sb->content.operation_number) == CLIENT_LOGIN)
+  // cout << "normal action read" << endl;
+  //  receive one client dump whenever what you do
+  if (int(sb->content.operation_number) == CLIENT_LOGIN)
   {
     show_login_client(sb, sockfd); // only for read
     string watchout = "just look";
@@ -130,7 +124,14 @@ void normal_action_read(union Server_Buffet *sb, int sockfd)
       Login_stage_read(sb, sockfd);
       break;
     case BASE_UI:
-      Basic_Ui_read(sb, sockfd);
+      if (int(sb->content.operation_number) == CLIENT_EXIT)
+      {
+        show_exit_client(sb, sockfd); // only for read
+        string watchout = "just look";
+        throw watchout;
+      }
+      else
+        Basic_Ui_read(sb, sockfd);
       break;
     case READY_BATTLE:
       look_for_battles_read(sb, sockfd);
@@ -178,6 +179,7 @@ void Login_stage_read(union Server_Buffet *sb, int sockfd)
   {
     system("clear");
     cout << "The game is full of players" << endl;
+    cout << "please press any button to exit!" << endl;
     throw 2;
   }
   else
@@ -372,6 +374,14 @@ void show_login_client(union Server_Buffet *sb, int sockfd) // only for read
 //
 void look_for_battles_read(union Server_Buffet *sb, int sockfd)
 {
+  if (int(sb->content.operation_number) == CLIENT_EXIT)
+  {
+    cout << "The counterpart  has dumped!" << endl;
+    cout << "Press any button to continue" << endl;
+    state = BASE_UI;
+    return;
+  }
+  // normal
   int error_code = int(sb->content.find_rival_error_code);
   switch (error_code)
   {
@@ -489,19 +499,34 @@ void Fighting_write(int sockfd)
     }
     break;
   }
-  // send your choice add operation number ,name and choice
-  cb.content.operation_number = FIGHTING_STATE;
-  memset(cb.content.user_name, 0, sizeof(cb.content.user_name));
-  strcpy(cb.content.user_name, Global_user_name);
-  cb.content.user_name[sizeof(cb.content.user_name) - 1] = '\0';
-  cb.content.choice = int(op[0] - '0');
-  //
-  int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
-  assert(send_flag > 0);
-  cout << "Waiting for compete Answer.................." << endl;
+  if (state == COMBATING)
+  {
+    // send your choice add operation number ,name and choice
+    cb.content.operation_number = FIGHTING_STATE;
+    memset(cb.content.user_name, 0, sizeof(cb.content.user_name));
+    strcpy(cb.content.user_name, Global_user_name);
+    cb.content.user_name[sizeof(cb.content.user_name) - 1] = '\0';
+    cb.content.choice = int(op[0] - '0');
+    //
+    int send_flag = send(sockfd, cb.characters, sizeof(cb.characters), 0);
+    assert(send_flag > 0);
+    cout << "Waiting for compete Answer.................." << endl;
+  }
+  else
+  {
+    throw 2; // ignore wait ,directly turn to base ui
+  }
 }
 void Fight_read(union Server_Buffet *sb, int sockfd)
 {
+  // counterpart dump
+  if (int(sb->content.operation_number) == CLIENT_EXIT)
+  {
+    cout << "The counterpart has dumped!" << endl;
+    state = BASE_UI;
+    return;
+  }
+  // normal
   assert(int(sb->content.operation_number) == FIGHTING_STATE);
   if (sb->content.win_state == EQUAL)
   {

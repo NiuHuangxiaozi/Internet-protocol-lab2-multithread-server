@@ -16,7 +16,7 @@ using namespace std;
 // some configurations
 #define SRV_PORT 4321           // server's port
 #define MAX_CLIENT_CONNECTION 3 // max client connection contemporary
-#define MAX_CLIENT 3            // max client to serve
+#define MAX_CLIENT 4            // max client to serve
 #define TIME_INTEVAL 20         // 设置等待时间,select function wait inteval
 #define NAME_SIZE 10            // name's size
 
@@ -79,14 +79,14 @@ union Server_Buffet
     char user_password[10];     // client password (use for login)
     char blood;                 // client blood
     char state;                 // client state
-    char player_number;         // player's number (max 3)
-    char members[11 * 3];       // player's (name ,state)
+    char player_number;         // player's number (max 4)
+    char members[11 * 4];       // player's (name ,state)
     char find_rival_error_code; // name not exit or  find myself to battle 0 means normal
     char peer_name[10];         // require another peer
     char user_name_choice;
     char peer_name_choice;
     char win_state;  // 0 means equal ,1 means win once ,2 means final win
-    char no_use[56]; // leave to use
+    char no_use[45]; // leave to use
   } content;
   char characters[128];
 };
@@ -173,6 +173,14 @@ public:
     sockfd_2 = _sockfd_2;
     is_ready_1 = false;
     is_ready_2 = false;
+  }
+  string get_counterpart_name(string name)
+  {
+    if (name == user_1_name)
+      return user_2_name;
+    else if (name == user_2_name)
+      return user_1_name;
+    return "";
   }
   void reset()
   {
