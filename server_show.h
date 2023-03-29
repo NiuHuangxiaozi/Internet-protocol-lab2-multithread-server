@@ -85,8 +85,9 @@ union Server_Buffet
     char peer_name[10];         // require another peer
     char user_name_choice;
     char peer_name_choice;
-    char win_state;  // 0 means equal ,1 means win once ,2 means final win
-    char no_use[45]; // leave to use
+    char win_state; // 0 means equal ,1 means win once ,2 means final win
+    char counter_part_dump;
+    char no_use[44]; // leave to use
   } content;
   char characters[128];
 };

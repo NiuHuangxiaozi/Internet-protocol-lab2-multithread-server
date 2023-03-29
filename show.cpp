@@ -116,6 +116,12 @@ void normal_action_read(union Server_Buffet *sb, int sockfd)
     string watchout = "just look";
     throw watchout;
   }
+  else if (int(sb->content.operation_number) == CLIENT_EXIT && int(sb->content.counter_part_dump) == 0)
+  {
+    show_exit_client(sb, sockfd); // only for read
+    string watchout = "just look";
+    throw watchout;
+  }
   else
   {
     switch (state)
@@ -124,14 +130,7 @@ void normal_action_read(union Server_Buffet *sb, int sockfd)
       Login_stage_read(sb, sockfd);
       break;
     case BASE_UI:
-      if (int(sb->content.operation_number) == CLIENT_EXIT)
-      {
-        show_exit_client(sb, sockfd); // only for read
-        string watchout = "just look";
-        throw watchout;
-      }
-      else
-        Basic_Ui_read(sb, sockfd);
+      Basic_Ui_read(sb, sockfd);
       break;
     case READY_BATTLE:
       look_for_battles_read(sb, sockfd);
@@ -146,6 +145,7 @@ void normal_action_read(union Server_Buffet *sb, int sockfd)
 }
 void normal_action_write(int sockfd)
 {
+  memset(cb.characters, 0, sizeof(cb.characters));
   switch (state)
   {
   case LOGIN_IN: // login stage
@@ -374,7 +374,7 @@ void show_login_client(union Server_Buffet *sb, int sockfd) // only for read
 //
 void look_for_battles_read(union Server_Buffet *sb, int sockfd)
 {
-  if (int(sb->content.operation_number) == CLIENT_EXIT)
+  if (int(sb->content.operation_number) == CLIENT_EXIT && int(sb->content.counter_part_dump) == 1)
   {
     cout << "The counterpart  has dumped!" << endl;
     cout << "Press any button to continue" << endl;
@@ -520,7 +520,7 @@ void Fighting_write(int sockfd)
 void Fight_read(union Server_Buffet *sb, int sockfd)
 {
   // counterpart dump
-  if (int(sb->content.operation_number) == CLIENT_EXIT)
+  if (int(sb->content.operation_number) == CLIENT_EXIT && int(sb->content.counter_part_dump) == 1)
   {
     cout << "The counterpart has dumped!" << endl;
     state = BASE_UI;

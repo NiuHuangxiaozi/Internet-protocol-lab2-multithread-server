@@ -31,7 +31,9 @@ void *handle_one_client(void *arg)
   // receive message from clients
   while (recv(socket_num, cb.characters, sizeof(cb.characters), 0) > 0)
   {
+    memset(sb.characters, 0, sizeof(sb.characters));
     analyze(&cb, &sb, socket_num); // analyze the client message
+    memset(sb.characters, 0, sizeof(sb.characters));
   }
   cout << "Delete one client the sockfd is " << socket_num << endl;
   delete_client(socket_num); // delete according player and boardcast

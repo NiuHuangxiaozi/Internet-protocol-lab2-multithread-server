@@ -56,6 +56,7 @@ void delete_client(int socket_num)
       // ignore the operation number
       union Server_Buffet sb;
       sb.content.operation_number = CLIENT_EXIT;
+      sb.content.counter_part_dump = 1;
 
       // memset(sb.content.peer_name, 0, sizeof(sb.content.peer_name));
       // strcpy(sb.content.peer_name, name.c_str());
@@ -169,7 +170,7 @@ void reback_players(union Client_Buffet *cb, union Server_Buffet *sb, int socket
   int statesize = 1;
   for (int i = 0; i < int(clients.size()); i++)
   {
-    memcpy(sb->content.members + i * (namesize + statesize), clients[i].get_name().c_str(), namesize);
+    strcpy(sb->content.members + i * (namesize + statesize), clients[i].get_name().c_str());
     sb->content.members[namesize * (i + 1)] = clients[i].get_state();
   }
   int send_flag = send(socket, sb->characters, sizeof(sb->characters), 0);
