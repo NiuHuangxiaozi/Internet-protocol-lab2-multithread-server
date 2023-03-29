@@ -40,6 +40,7 @@ void delete_client(int socket_num)
   for (int k = 0; k < int(clients.size()); k++)
   {
     union Server_Buffet sb;
+    memset(sb.characters, 0, sizeof(sb.characters));
     sb.content.operation_number = CLIENT_EXIT;
     strcpy(sb.content.user_name, name.c_str());
     sb.content.state = state;
@@ -55,6 +56,7 @@ void delete_client(int socket_num)
       // tell counterpart turn to base_ui
       // ignore the operation number
       union Server_Buffet sb;
+      memset(sb.characters, 0, sizeof(sb.characters));
       sb.content.operation_number = CLIENT_EXIT;
       sb.content.counter_part_dump = 1;
 
